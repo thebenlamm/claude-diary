@@ -6,7 +6,7 @@ A long-term memory Claude Code plugin that learns from your activity and continu
 - **Reflection**: Performs reflection across multiple diary entries
 - **Memory**: Reflection updates your `CLAUDE.md` with actionable rules
 
-<img width="1024" height="1024" alt="image" src="https://github.com/user-attachments/assets/6320934a-3f8b-4b43-9b82-9727c5eab10d" />
+<img width="951" height="667" alt="cd" src="https://github.com/user-attachments/assets/d0b1deef-b027-4014-b761-67e36c221edc" />
 
 ## Quickstart 
 
