@@ -1,10 +1,57 @@
-# Claude Code Memory System
+# Claude Diary   
 
-A fully automated long-term memory plugin for Claude Code that learns from your coding sessions and continuously improves Claude's understanding of your preferences, patterns, and workflows.
+A long-term memory Claude Code plugin that learns from your activity and continuously improves Claude's understanding of your preferences, patterns, and workflows.
+
+- **Diary**: Auto-generates diary entry for each Claude Code session 
+- **Reflection**: Allows reflection across multiple diary entries
+- **Memory**: Reflection directly updates your CLAUDE.md with actionable rules
+
+## Quickstart 
+
+1. **Clone this repository**:
+```bash
+git clone <repository-url> claude-diary
+cd claude-diary
+```
+
+2. **Install commands**:
+```bash
+cp commands/*.md ~/.claude/commands/
+```
+
+3. **Install SessionEnd hook** (for auto-diary generation):
+```bash
+mkdir -p ~/.claude/hooks
+cp hooks/session-end.sh ~/.claude/hooks/session-end.sh
+chmod +x ~/.claude/hooks/session-end.sh
+```
+
+4. **Done!** The system is now active:
+   - Diary entries will auto-generate at session end
+   - Run `/reflect` whenever you want to analyze patterns
+   - Your CLAUDE.md will automatically improve over time
 
 ## Overview
 
-This plugin implements an automated memory system inspired by [Cat Wu's approach at Anthropic](https://www.youtube.com/watch?v=IDSAMqip6ms&t=352s). It creates a feedback loop where Claude learns from every session and automatically updates its behavior.
+`CLAUDE.md` serves as [memory](https://code.claude.com/docs/en/memory) for Claude Code, but is only used manually via the `#` shortcut. This plugin automates the process of saving memories to `CLAUDE.md` from your Claude Code sessions. 
+
+### Diary Entries
+
+Each Claude Code session is already logged to a file in `~/.claude/projects/...` in JSONL format. This plugin includes the `diary` command to create a diary entry for the current session. You can see the rules for the `diary` command in the [diary.md](commands/diary.md) file. This is run automatically at the end of each session using [the `session-end.sh` hook](https://code.claude.com/docs/en/hooks-guide).
+
+### Reflection
+
+The `reflect` command is used to analyze the diary entries and create a reflection document. You can see the rules for the `reflect` command in the [reflect.md](commands/reflect.md) file.
+
+
+
+
+Inspired by [an interview with Dan Shipper and Cat Wu / Boris Cherny from the Claude Code team](https://www.youtube.com/watch?v=IDSAMqip6ms&t=352s)
+
+
+
+
+This plugin implements an automated memory system for Claude Code, creating a feedback loop where Claude learns from every session and automatically updates it's memory
 
 ### How It Works (Automated Flow)
 
@@ -44,7 +91,7 @@ This plugin implements an automated memory system inspired by [Cat Wu's approach
 
 ### Key Features
 
-- **Fully Automated**: Diary entries auto-generated at session end via SessionEnd hook
+- **Automatic + Manual Diary Creation**: PreCompact hook captures long sessions automatically, `/diary` command for manual control
 - **Ad Hoc Reflection**: Run `/reflect` whenever you want to analyze accumulated entries
 - **Automatic CLAUDE.md Updates**: Reflection directly updates your CLAUDE.md with actionable rules
 - **Incremental Learning**: processed.log prevents duplicate analysis, enables continuous learning
@@ -85,16 +132,17 @@ cd cc-memory
 cp commands/*.md ~/.claude/commands/
 ```
 
-3. **Install SessionEnd hook** (for auto-diary generation):
+3. **Install PreCompact hook** (for automatic diary generation):
 ```bash
 mkdir -p ~/.claude/hooks
-cp hooks/session-end.sh ~/.claude/hooks/session-end.sh
-chmod +x ~/.claude/hooks/session-end.sh
+cp hooks/pre-compact.sh ~/.claude/hooks/pre-compact.sh
+chmod +x ~/.claude/hooks/pre-compact.sh
 ```
 
 4. **Done!** The system is now active:
-   - Diary entries will auto-generate at session end
-   - Run `/reflect` whenever you want to analyze patterns
+   - Diary entries will auto-generate before compact operations (long sessions)
+   - Run `/diary` manually anytime to capture current session
+   - Run `/reflect` after accumulating 5-10+ entries to analyze patterns
    - Your CLAUDE.md will automatically improve over time
 
 ### Alternative: Install as Plugin
@@ -107,14 +155,25 @@ See [INSTALL.md](INSTALL.md) for detailed plugin installation instructions using
 
 Once installed, the system works automatically with minimal intervention:
 
-#### Phase 1: Diary Generation (Automatic)
+#### Phase 1: Diary Generation (Automatic + Manual)
 
-**Just work normally with Claude Code.** When your session ends, the SessionEnd hook automatically:
-1. Parses the session transcript from `~/.claude/projects/...`
-2. Extracts key information (decisions, challenges, preferences, patterns)
-3. Creates a diary entry at `~/.claude/memory/diary/YYYY-MM-DD-session-N.md`
+**Two ways to create diary entries:**
 
-**Manual override**: Run `/diary` anytime to create an entry for the current session.
+**1. Automatic (PreCompact Hook)**:
+- Just work normally with Claude Code
+- In long sessions (200+ messages), before Claude Code compacts the conversation, the PreCompact hook automatically:
+  - Invokes `/diary` command
+  - Parses the session transcript from `~/.claude/projects/...`
+  - Extracts key information (decisions, challenges, preferences, patterns)
+  - Creates a diary entry at `~/.claude/memory/diary/YYYY-MM-DD-session-N.md`
+- Frequency: Depends on session length (short sessions may not trigger)
+
+**2. Manual (/diary Command)**:
+- Run `/diary` anytime to capture the current session
+- Works for sessions of any length
+- Ideal for: end of important work, after key decisions, before switching projects
+
+**Best practice**: Use both! Automatic captures long sessions, manual captures important moments.
 
 **What gets captured in diary entries:**
 - Task summary and design decisions
@@ -249,7 +308,7 @@ The plugin creates and uses these directories:
 ```
 ~/.claude/
 ├── hooks/
-│   └── session-end.sh           # Auto-generates diary at session end
+│   └── pre-compact.sh           # Auto-generates diary before compact (long sessions)
 ├── memory/
 │   ├── diary/                   # Session diary entries
 │   │   ├── 2025-01-15-session-1.md
@@ -465,8 +524,9 @@ Analyzed 10 diary entries spanning 8 days across 3 different projects. Strong pa
 ## Roadmap
 
 ### Phase 1: Core Memory System ✅ (Complete)
-- `/diary` command for diary creation
-- Automatic diary generation via SessionEnd hook
+- `/diary` command for manual diary creation
+- Automatic diary generation via PreCompact hook (long sessions)
+- Two-approach strategy: automatic + manual diary capture
 - `/reflect` command for pattern analysis
 - Automatic CLAUDE.md updates with actionable rules
 - processed.log tracking for incremental reflection
@@ -527,7 +587,7 @@ To modify or extend:
 
 ## Credits
 
-- Inspired by [Cat Wu's diary entry pattern](https://www.youtube.com/watch?v=IDSAMqip6ms&t=352s) at Anthropic
+- 
 - Built for the Claude Code community
 - Author: rlm
 
