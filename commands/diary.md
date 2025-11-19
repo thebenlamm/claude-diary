@@ -6,20 +6,41 @@ description: Create a structured diary entry from the current session transcript
 
 You are going to create a structured diary entry that documents what happened in the current Claude Code session. This entry will be used later for reflection and pattern identification.
 
+## Approach: Context-First Strategy
+
+**Primary Method (use this first):**
+Reflect on the conversation history loaded in this session. You have access to:
+- All user messages and requests
+- Your responses and tool invocations
+- Files you read, edited, or wrote
+- Errors encountered and solutions applied
+- Design decisions discussed
+- User preferences expressed
+
+**When to use JSONL fallback (rare):**
+- Session was compacted and context is incomplete
+- You need precise statistics (exact tool counts, timestamps)
+- User specifically requests detailed session analysis
+
 ## Steps to Follow
 
-### 1. Locate the Current Session Transcript
+### 1. Create Diary Entry from Context (Primary Method)
 
-Run this single command to find the transcript file:
+Review the current conversation and create a diary entry based on what happened. No tool invocations needed for typical sessions.
+
+Skip to Step 4 to write the diary entry.
+
+### 2. Fallback: Locate Session Transcript (Only if context insufficient)
+
+If you determine context is insufficient, run this command to find the transcript:
 
 ```bash
 # Find the most recent session file for this project
-CWD="{{ cwd }}" && \
-PROJECT_HASH=$(echo "$CWD" | sed 's/\//-/g' | sed 's/^-//') && \
-SESSION_FILE=$(ls -t ~/.claude/projects/${PROJECT_HASH}/*.jsonl 2>/dev/null | head -1) && \
+# NOTE: Path format includes leading dash: -Users-name-Code-app
+SESSION_FILE=$(ls -t ~/.claude/projects/-$(echo "{{ cwd }}" | sed 's/\//‐/g')/*.jsonl 2>/dev/null | head -1) && \
 if [ -z "$SESSION_FILE" ]; then \
-  echo "ERROR: No session file found for project: $CWD" && \
-  echo "Looked in: ~/.claude/projects/${PROJECT_HASH}/" && \
+  echo "ERROR: No session file found" && \
+  echo "Looking in: ~/.claude/projects/-$(echo "{{ cwd }}" | sed 's/\//‐/g')/" && \
   ls -la ~/.claude/projects/ | head -20; \
 else \
   echo "FOUND: $SESSION_FILE" && \
@@ -29,61 +50,31 @@ fi
 
 **What this does:**
 - Converts current directory to project hash format (e.g., `/Users/name/Code/app` → `-Users-name-Code-app`)
+- Note the LEADING DASH in the path format
 - Finds the most recent `.jsonl` file in that project's directory
-- Reports the file location and size
 
-**Important:** Save the `SESSION_FILE` path from this output for the next step.
+### 3. Fallback: Extract Key Metadata (Only if needed)
 
-### 2. Extract Session Data
-
-Run this single batched command to extract all necessary information:
+Only run this if you need precise statistics:
 
 ```bash
-SESSION_FILE="[path-from-step-1]" && \
+SESSION_FILE="[path-from-step-2]" && \
 echo "=== SESSION METADATA ===" && \
 echo "File: $SESSION_FILE" && \
-echo "Lines: $(wc -l < "$SESSION_FILE")" && \
 echo "Size: $(ls -lh "$SESSION_FILE" | awk '{print $5}')" && \
 echo "" && \
-echo "=== GIT BRANCH ===" && \
-jq -r 'select(.gitBranch) | .gitBranch' "$SESSION_FILE" | head -1 && \
-echo "" && \
-echo "=== TIMESTAMP ===" && \
-jq -r '.timestamp' "$SESSION_FILE" | head -1 && \
-echo "" && \
-echo "=== USER MESSAGES (First 5) ===" && \
-jq -r 'select(.message.role == "user") | .message.content' "$SESSION_FILE" | head -5 && \
-echo "" && \
-echo "=== USER MESSAGES (Last 3) ===" && \
-jq -r 'select(.message.role == "user") | .message.content' "$SESSION_FILE" | tail -3 && \
-echo "" && \
-echo "=== TOOL USAGE COUNTS ===" && \
+echo "=== TOOL COUNTS ===" && \
 jq -r 'select(.message.content[]?.name) | .message.content[].name' "$SESSION_FILE" | sort | uniq -c && \
 echo "" && \
 echo "=== FILES MODIFIED ===" && \
-grep -o '"filePath":"[^"]*"' "$SESSION_FILE" | sort -u && \
-echo "" && \
-echo "=== GIT OPERATIONS ===" && \
-grep -E 'git commit|git push|git merge' "$SESSION_FILE" | grep -o '"command":"[^"]*"' | head -5 && \
-echo "" && \
-echo "=== ERRORS (if any) ===" && \
-grep -i '"Exit code [^0]' "$SESSION_FILE" | head -3
+grep -o '"filePath":"[^"]*"' "$SESSION_FILE" | sort -u
 ```
 
-**What this extracts:**
-- Session metadata (file size, line count)
-- Git branch and timestamp
-- User messages (first 5 and last 3 for context)
-- Tool usage statistics (how many Edit, Read, Write, etc.)
-- Files that were modified
-- Git operations performed
-- Any errors encountered
+This is a simplified extraction - only metadata, tool counts, and files. Much faster than the old approach.
 
-**Note:** For large sessions (>1MB), this command samples strategically rather than reading everything.
+### 4. Create the Diary Entry
 
-### 3. Create the Diary Entry
-
-Based on the extracted data above, create a structured markdown diary entry with these sections:
+Based on the conversation context (and optional metadata from Step 3), create a structured markdown diary entry with these sections:
 
 ```markdown
 # Session Diary Entry
@@ -178,7 +169,7 @@ Use the Write tool to actually write the diary content to the determined file pa
 
 Display:
 - Path where diary was saved
-- Brief summary: number of user messages, tools used, files modified
+- Brief summary of what was captured
 
 ## Important Guidelines
 
@@ -187,15 +178,25 @@ Display:
 - **Document ALL user preferences**: Especially around commits, PRs, linting, testing
 - **Include failures**: What didn't work is valuable learning
 - **Keep it structured**: Follow the template consistently
+- **Use context first**: Only parse JSONL files when truly necessary
+
+## Decision Guide: When to Use Each Approach
+
+| Situation | Approach | Reasoning |
+|-----------|----------|-----------|
+| During active session | **Context only** | All information available, 0 tool calls |
+| PreCompact hook trigger | **Context only** | Session still in memory |
+| Post-session analysis | **JSONL fallback** | Context no longer available |
+| Need exact statistics | **JSONL metadata** | Precise counts unavailable from context |
+| User says "create diary" | **Context first** | Assume current session unless specified |
 
 ## Error Handling
 
-- If session file not found, explain where you looked and show available project directories
-- If transcript is malformed, document what you could parse
-- If any extraction fails, note it and continue with available data
+**Context-based errors:**
+- If context seems incomplete, mention what's missing and offer to use JSONL fallback
+- If uncertain about details, document with "approximately" or "unclear from context"
 
-## For Large Sessions (>1MB)
-
-The extraction command above already samples strategically (first/last messages, counts instead of full extracts). This keeps the data manageable while capturing the essential information.
-
-If you need more detailed analysis, use the Read tool to examine the session file directly, or use grep for specific keywords.
+**JSONL-based errors:**
+- If session file not found, show where you looked (remember: `-Users-...` format with leading dash)
+- Check `ls -la ~/.claude/projects/` to help diagnose path issues
+- If transcript is malformed, document what you could parse and fall back to context

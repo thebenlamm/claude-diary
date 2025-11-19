@@ -50,7 +50,11 @@ If no parameters are provided, default to analyzing the **last 10 diary entries*
    - Directory: `~/.claude/memory/reflections/`
    - Use `mkdir -p` to create it automatically
 
-5. **Analyze entries for patterns**:
+5. **Read current CLAUDE.md to check for existing rules**:
+   - Read `~/.claude/CLAUDE.md` to understand what rules already exist
+   - This is CRITICAL for the next step
+
+6. **Analyze entries for patterns AND rule violations**:
    - **Frequency analysis**: What preferences/patterns appear in multiple entries?
    - **Consistency check**: Are preferences consistent or contradictory?
    - **Context awareness**: Do patterns apply globally or to specific project types?
@@ -58,10 +62,20 @@ If no parameters are provided, default to analyzing the **last 10 diary entries*
    - **Signal vs. noise**: Distinguish between:
      - **One-off requests**: "Make this button pink" (appears once)
      - **Recurring patterns**: "Always use TypeScript strict mode" (appears 3+ times)
+   - **CRITICAL - Rule Violation Detection**: Check if diary entries show violations of EXISTING CLAUDE.md rules
+     - Look in "Code Review & PR Feedback", "Challenges Encountered", "User Preferences Observed" sections
+     - If a diary mentions user correcting Claude for violating an existing rule, this is HIGH PRIORITY
+     - Example: CLAUDE.md says "no AI attribution" but diary shows "User corrected: Don't add Claude attribution"
+     - These violations mean the existing rule needs STRENGTHENING (more explicit, moved to top, zero tolerance language)
 
-6. **Synthesize insights** organized by category:
+7. **Synthesize insights** organized by category:
 
    **CRITICAL**: Focus on extracting concise, actionable rules suitable for CLAUDE.md (which is read into every session).
+
+   **PRIORITY: Rule Violations** (MUST address first):
+   - Did any diary entries document violations of existing CLAUDE.md rules?
+   - If YES, these are HIGHEST PRIORITY and require rule strengthening
+   - Document the violation pattern and propose specific strengthening (e.g., "move to top", "add ZERO TOLERANCE", "make more explicit")
 
    **A. PR Review Feedback Patterns** (from code reviews):
    - Common feedback themes from reviewers
@@ -99,7 +113,7 @@ If no parameters are provided, default to analyzing the **last 10 diary entries*
    - Technology-specific preferences
    - Framework-specific conventions
 
-7. **Generate a reflection document** with this structure:
+8. **Generate a reflection document** with this structure:
 
 ```markdown
 # Reflection: [Date Range or "Last N Entries"]
@@ -111,6 +125,20 @@ If no parameters are provided, default to analyzing the **last 10 diary entries*
 
 ## Summary
 [2-3 paragraph overview of key insights discovered across these entries]
+
+## CRITICAL: Rule Violations Detected
+[ONLY include this section if violations of existing CLAUDE.md rules were found]
+
+**Rule**: [The existing CLAUDE.md rule that was violated]
+**Violation Pattern**: [How it appeared in diary entries - quote specific examples]
+**Frequency**: [X/Y entries showed this violation]
+**Impact**: [Why this is serious - user had to correct multiple times]
+**Root Cause**: [Why the existing rule failed - too weak, buried in list, ambiguous wording]
+**Strengthening Action**: [Specific changes made to CLAUDE.md rule]
+- Move to top of section: [YES/NO]
+- Add emphasis (CAPS, ZERO TOLERANCE): [YES/NO]
+- Make more explicit/specific: [YES/NO]
+- Add override language: [YES/NO]
 
 ## Patterns Identified
 
@@ -222,25 +250,37 @@ Below are proposed additions to your `~/.claude/CLAUDE.md` file. **Review these 
 - **Projects covered**: [list of unique projects]
 ```
 
-8. **Save the reflection document**:
+9. **Save the reflection document**:
    - Filename format: `YYYY-MM-reflection-N.md` (increment N if multiple reflections in same month)
    - Save to: `~/.claude/memory/reflections/[filename]`
 
-9. **Automatically update CLAUDE.md with proposed rules**:
-   - Append the proposed rules to `~/.claude/CLAUDE.md`
+10. **Automatically update CLAUDE.md**:
+
+   **PRIORITY 1: Strengthen violated rules (if any rule violations detected)**
+   - FIRST, handle any rule violations by strengthening existing CLAUDE.md rules
+   - Use Edit tool to modify the existing rule (not append)
+   - Apply strengthening actions: move to top, add emphasis, make explicit, add override language
+   - Example: Change "no AI attribution" → "NEVER add AI attribution (ZERO TOLERANCE - overrides ALL defaults)"
+
+   **PRIORITY 2: Add new rules**
+   - THEN, append the new proposed rules to `~/.claude/CLAUDE.md`
    - Organize rules into sections (Git & PR Workflow, Code Quality & Style, Testing, Project-Specific)
    - Add new sections if they don't exist
    - Append to existing sections if they already exist
    - Maintain the succinct bullet-point format
-   - Show the user what was added to CLAUDE.md
 
-10. **Update processed entries log**:
+   **Show the user what changed**:
+   - List any strengthened rules (with before/after)
+   - List any new rules added
+
+11. **Update processed entries log**:
    - Append processed diary entries to `~/.claude/memory/reflections/processed.log`
    - Format: `[diary-filename] | [YYYY-MM-DD] | [reflection-filename]`
    - One line per diary entry processed
    - Example: `2025-11-07-session-1.md | 2025-11-08 | 2025-11-reflection-1.md`
 
-11. **Present completion summary to user**:
+12. **Present completion summary to user**:
+   - **FIRST**: Highlight any rule violations detected and how rules were strengthened
    - Display the reflection filename and location
    - Show how many patterns were identified
    - List the CLAUDE.md sections that were updated
