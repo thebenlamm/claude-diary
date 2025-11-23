@@ -35,31 +35,24 @@ chmod +x ~/.claude/hooks/pre-compact.sh
 
 ## Overview
 
-`CLAUDE.md` files serve as [long-term memory](https://code.claude.com/docs/en/memory) for Claude Code. But, they are typically updated manually (e.g., via the `#` shortcut or `/memory` command). This plugin aims to automates the process of updating `CLAUDE.md` with the learnings from your activity over time. 
-
-It is inspired by [an interview between Dan Shipper and Cat Wu / Boris Cherny from the Claude Code team](https://www.youtube.com/watch?v=IDSAMqip6ms&t=352s), which mentions that some Anthropic employees have started generating diary entries for Claude sessions and performing reflection over them. 
-
-The approach follows that general flow, and also borrows ideas from the [Generative Agents paper](https://arxiv.org/pdf/2304.03442), which introduces a memory architecture with three key components:
+`CLAUDE.md` files serve as [long-term memory](https://code.claude.com/docs/en/memory) for Claude Code. But, they are typically updated manually (e.g., via the `#` shortcut or `/memory` command). This plugin aims to automates the process of updating `CLAUDE.md` with the learnings from your activity over time. It is inspired by [an interview between Dan Shipper and Cat Wu / Boris Cherny from the Claude Code team](https://www.youtube.com/watch?v=IDSAMqip6ms&t=352s), which mentions that some Anthropic employees have started generating diary entries for Claude sessions and performing reflection over them. The approach follows that general flow, and also borrows ideas from the [Generative Agents paper](https://arxiv.org/pdf/2304.03442), which introduces a memory architecture with three key components:
 
 1. **Observations**: Raw experiences recorded in natural language (like our diary entries)
 2. **Reflection**: Higher-level insights and patterns (like our `/reflect` command)
 3. **Retrieval**: Accessing memories to inform behavior (like reading CLAUDE.md into each session)
 
+<img width="510" height="408" alt="Screenshot 2025-11-22 at 8 54 30 PM" src="https://github.com/user-attachments/assets/36c88072-9958-462e-b020-ad344445912a" />
+
 ### Diary Entries
 
-The `/diary` command creates structured diary entries from the current session. It uses a context-first approach, reflecting on the conversation already in Claude Code's context. However, it can also parse JSONL transcripts, which are logged for each session to the project directory. See [diary.md](commands/diary.md) for details. The `diary` command can be run in two ways:
+The `/diary` command creates diary entries from the current session. It uses a context-first approach, reflecting on the conversation already in Claude Code's context, but can also parse JSONL transcripts, which are logged for each session to the project directory. See [diary.md](commands/diary.md) for details. The `diary` command can be run in two ways:
 
 1. **Automatic**: PreCompact hook runs before conversation compacts (long sessions, 200+ messages). This could be customized to run at different points using different [Claude Code hooks](https://code.claude.com/docs/en/hooks-guide).
 2. **Manual**: Run `/diary` anytime to capture important context in the current session
 
 #### How the Diary Command Works
 
-The command instructs Claude to create diary entries using a **context-first strategy**:
-- **Primary method**: Reflect on conversation history in context (user messages, tool invocations, files modified, errors, solutions)
-- **Fallback method**: Parse JSONL transcripts only when context is insufficient (e.g., after PreCompact hook compresses long sessions)
-- **Output template**: Structured markdown with sections for task summary, work done, design decisions, user preferences, code review feedback, challenges, solutions, and code patterns
-- **Key guidelines**: Be factual and specific, capture the "why" behind decisions, document ALL user preferences (especially commits/PRs/linting/testing), include failures as learning
-- **Output location**: `~/.claude/memory/diary/YYYY-MM-DD-session-N.md`
+The command instructs Claude to create diary entries by reflecting on the conversation history in context (user messages, tool invocations, files modified, errors, solutions). It then instructs Claude to write the diary entry to a file in the `~/.claude/memory/diary/` directory as a markdown file with sections for task summary, work done, design decisions, user preferences, code review feedback, challenges, solutions, and code patterns. It instructs Claude to be factual and specific, capture the "why" behind decisions, document ALL user preferences (especially commits/PRs/linting/testing), include failures as learning. The output location is `~/.claude/memory/diary/YYYY-MM-DD-session-N.md`.
 
 ### Reflection
 
@@ -67,16 +60,7 @@ The `/reflect` command analyzes diary entries to identify patterns and automatic
 
 #### How the Reflect Command Works
 
-The command instructs Claude to perform multi-diary pattern analysis:
-- **Track processing**: Check `processed.log` to skip already-analyzed entries (avoids duplicate analysis)
-- **Filter entries**: By date range, count, project path, or keyword/topic
-- **Pattern recognition**: Require 2+ occurrences across sessions to identify patterns (3+ = strong pattern)
-- **CRITICAL - Rule violation detection**: Scan for violations of existing CLAUDE.md rules (highest priority for strengthening)
-- **Synthesize insights**: Extract patterns across 6 categories: PR review feedback, persistent preferences, design decisions that worked, anti-patterns to avoid, efficiency lessons, project-specific patterns
-- **Signal vs noise**: Distinguish actionable patterns from one-off requests
-- **Quality checks**: Verify patterns are actionable, generalizable, consistent, and valuable
-- **Auto-update CLAUDE.md**: First strengthen violated rules (move to top, add emphasis, make explicit), then append new succinct rules
-- **Maintain succinctness**: CLAUDE.md rules must be one-line bullets in imperative tone (no verbose explanations)
+The reflect command instructs Claude to perform multi-diary pattern analysis. First, it has Claude check `processed.log` to skip already-analyzed diary entries (avoids duplicate analysis). Then, it has Claude recognize patterns that appear repeatedly (2+ occurrences = pattern, 3+ = strong pattern). In particular, it asks Claude to scan for violations of existing CLAUDE.md rules (highest priority for strengthening) and synthesize insights across 6 categories: PR review feedback, persistent preferences, design decisions that worked, anti-patterns to avoid, efficiency lessons, project-specific patterns. Finally, it has Claude auto-update CLAUDE.md with new rules that must be one-line bullets in imperative tone (no verbose explanations).
 
 #### Reflect Command Options
 
@@ -104,30 +88,6 @@ The command instructs Claude to perform multi-diary pattern analysis:
 ```
 
 ## Directory Structure
-
-The plugin creates and uses these directories:
-
-```
-~/.claude/
-├── hooks/
-│   └── pre-compact.sh           # Auto-generates diary before compact (long sessions)
-├── memory/
-│   ├── diary/                   # Session diary entries
-│   │   ├── 2025-01-15-session-1.md
-│   │   ├── 2025-01-15-session-2.md
-│   │   └── 2025-01-16-session-1.md
-│   └── reflections/             # Synthesized insights & tracking
-│       ├── 2025-01-reflection-1.md
-│       ├── 2025-02-reflection-1.md
-│       └── processed.log        # Tracks which entries have been analyzed
-└── CLAUDE.md                    # Rules automatically updated by /reflect
-```
-
-These directories are automatically created on first use.
-
-**processed.log format**: `[diary-entry] | [reflection-date] | [reflection-file]`
-
-## Contributing
 
 This plugin follows the [Claude Code plugin structure](https://code.claude.com/docs/en/plugins):
 
