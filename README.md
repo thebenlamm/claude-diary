@@ -1,10 +1,12 @@
-# Claude Diary   
+# Claude Diary
 
 A long-term memory plugin for Claude Code that learns from your activity over time and continuously improves Claude's understanding of your preferences, patterns, and workflows.
 
-- **Diary**: Generate a diary entry for any Claude Code session 
+- **Diary**: Generate a diary entry for any Claude Code session
 - **Reflection**: Performs reflection across multiple diary entries
 - **Memory**: Reflection updates your `CLAUDE.md` with observed patterns and preferences
+
+Read more: [Blog post](https://rlancemartin.github.io/2025/12/01/claude_diary/)
 
 <img width="951" height="667" alt="cd" src="https://github.com/user-attachments/assets/d0b1deef-b027-4014-b761-67e36c221edc" />
 
@@ -113,6 +115,17 @@ To modify or extend:
 1. Edit command files in `commands/`
 2. Test locally using the local marketplace approach
 3. Share your improvements
+
+## Use Cases
+
+Claude Diary excels at capturing and learning from:
+
+- **PR review feedback**: Automatically incorporate reviewer preferences into future sessions
+- **Git workflow**: Learn commit style, branch naming, and message formatting conventions
+- **Testing practices**: Capture patterns like running targeted tests first, then comprehensive suites
+- **Code quality**: Identify and avoid anti-patterns (naming conflicts, stale directories, verbose code)
+- **Agent design**: Learn preferences around token efficiency, delegation patterns, and context management
+- **Self-correction**: Reinforce existing CLAUDE.md rules when violations are detected
 
 ## Future work
 
